@@ -10,7 +10,7 @@ class KidneyReadException(Exception):
     pass
 
 
-def maximum_cardinality_score(cycle, digraph):
+def cycle_score(cycle, digraph):
     """Calculate the sum of a cycle's edge scores.
 
     Args:
@@ -22,31 +22,30 @@ def maximum_cardinality_score(cycle, digraph):
                for i in range(len(cycle)))
 
 
-def failure_aware_cycle_score(cycle, digraph, edge_prob):
+def failure_aware_cycle_score(cycle, digraph, edge_success_prob):
     """Calculate a cycle's total score, with edge failures and no backarc recourse.
 
     Args:
         cycle: A list of Vertex objects in the cycle, with the first Vertex not repeated.
         digraph: The digraph in which this cycle appears.
-        edge_prob: The problem that any given edge will NOT fail
+        edge_success_prob: The problem that any given edge will NOT fail
     """
 
     return sum(digraph.adj_mat[cycle[i - 1].id][cycle[i].id].score
-               for i in range(len(cycle))) * edge_prob ** len(cycle)
+               for i in range(len(cycle))) * edge_success_prob ** len(cycle)
 
 
-def fuzzy_cycle_score(cycle, digraph, edge_prob, vertex_prob):
-    """Calculate a cycle's total score, with edge failures and vertex failures.
+def fuzzy_cycle_score(cycle, digraph, edge_success_prob=0.7, vertex_success_prob=0.7):
+    """Calculate a cycle's total score, with edge failures and no backarc recourse.
 
     Args:
         cycle: A list of Vertex objects in the cycle, with the first Vertex not repeated.
         digraph: The digraph in which this cycle appears.
-        edge_prob: The problem that any given edge will NOT fail
-        vertex_prob: the problem that any given vertex will NOT fail
+        edge_success_prob: The problem that any given edge will NOT fail
     """
 
     return sum(digraph.adj_mat[cycle[i - 1].id][cycle[i].id].score
-               for i in range(len(cycle))) * edge_prob ** len(cycle) * vertex_prob ** (len(cycle) + 1)
+               for i in range(len(cycle))) * edge_success_prob ** len(cycle) * vertex_success_prob ** (len(cycle))
 
 
 class Vertex:
@@ -70,7 +69,7 @@ class Edge:
         self.tgt = tgt  # target vertex
 
     def __str__(self):
-        return ("V" + str(self.src.id) + "-V" + str(self.tgt.id))
+        return "V" + str(self.src.id) + "-V" + str(self.tgt.id)
 
 
 class Digraph:

@@ -26,8 +26,8 @@ class OptConfig(object):
         max_chain
         verbose: True if and only if Gurobi output should be writtent to screen and log file
         timelimit
-        edge_success_prob
-        eef_alt_constraints: True if and only if alternative EEF constraints should be used
+        edge_success_prob: probability of edge success
+        vertex_success_prob: probability of vertex success
         lp_file: The name of a .lp file to write, or None if the file should not be written
         relax: True if and only if the LP relaxation should be solved also
     """
@@ -65,7 +65,7 @@ class OptSolution(object):
         self.chains = chains
         self.digraph = digraph
         self.total_score = (sum(c.score for c in chains) +
-                            sum(fuzzy_cycle_score(c, digraph, edge_success_prob, vertex_success_prob) for c in cycles))
+                            sum(cycle_score(c, digraph) for c in cycles))
         self.edge_success_prob = edge_success_prob
         self.vertex_success_prob = vertex_success_prob
 
@@ -89,23 +89,6 @@ class OptSolution(object):
         for c in self.chains:
             print((str(c.ndd_index) + "\t" + "\t".join(str(v) for v in c.vtx_indices)))
 
-    # def relabelled_copy(self, old_to_new_vertices, new_digraph):
-    #     """Create a copy of the solution with vertices relabelled.
-    #
-    #     If the solution was found on a relabelled copy of the instance digraph, this
-    #     method can be used to transform the solution back to the original digraph. Each
-    #     Vertex v in the OptSolution on which this method is called is replaced in the
-    #     returned copy by old_to_new_vertices[v.id].
-    #     """
-    #
-    #     relabelled_cycles = [[old_to_new_vertices[v.id] for v in c] for c in self.cycles]
-    #     relabelled_chains = [Chain(c.ndd_index,
-    #                                [old_to_new_vertices[i].id for i in c.vtx_indices],
-    #                                c.score)
-    #                          for c in self.chains]
-    #     return OptSolution(self.ip_model, relabelled_cycles, relabelled_chains,
-    #                        new_digraph, self.edge_success_prob)
-
 
 def optimise(model, cfg):
     if cfg.lp_file:
@@ -121,35 +104,6 @@ def optimise(model, cfg):
         sys.exit(0)
     else:
         model.optimize()
-
-
-def optimise_relabelled(formulation_fun, cfg):
-    """Optimise on a relabelled graph such that vertices are sorted in descending
-        order of (indegree + outdegree)"""
-
-    in_degs = [0] * cfg.digraph.n
-    for e in cfg.digraph.es:
-        in_degs[e.tgt.id] += 1
-
-    sorted_vertices = sorted(cfg.digraph.vs,
-                             key=lambda v: len(v.edges) + in_degs[v.id],
-                             reverse=True)
-
-    relabelled_digraph = cfg.digraph.induced_subgraph(sorted_vertices)
-
-    # old_to_new_vtx[i] is the vertex in the new graph corresponding to vertex
-    # i in the original digraph
-    old_to_new_vtx = [None] * cfg.digraph.n
-    for i, v in enumerate(sorted_vertices):
-        old_to_new_vtx[v.id] = relabelled_digraph.vs[i]
-
-    relabelled_ndds = create_relabelled_ndds(cfg.ndds, old_to_new_vtx)
-    relabelled_cfg = copy.copy(cfg)
-    relabelled_cfg.digraph = relabelled_digraph
-    relabelled_cfg.ndds = relabelled_ndds
-
-    opt_result = formulation_fun(relabelled_cfg)
-    return opt_result.relabelled_copy(sorted_vertices, cfg.digraph)
 
 
 def create_ip_model(time_limit, verbose):
@@ -180,7 +134,7 @@ def optimise_maximum_cardinality(cfg):
     """
 
     cycles = cfg.digraph.find_cycles(cfg.max_cycle)
-    chains = find_chains(cfg.digraph, cfg.ndds, cfg.max_chain, 1, 1)
+    chains = maximum_cardinality_find_chains(cfg.digraph, cfg.ndds, cfg.max_chain)
 
     m = create_ip_model(cfg.timelimit, cfg.verbose)
     m.params.method = 2
@@ -216,9 +170,7 @@ def optimise_maximum_cardinality(cfg):
     return OptSolution(ip_model=m,
                        cycles=[c for c, v in zip(cycles, cycle_vars) if v.x > 0.5],
                        chains=[c for c, v in zip(chains, chain_vars) if v.x > 0.5],
-                       digraph=cfg.digraph,
-                       edge_success_prob=cfg.edge_success_prob,
-                       vertex_success_prob=cfg.vertex_success_prob)
+                       digraph=cfg.digraph)
 
 
 
@@ -239,7 +191,7 @@ def optimise_failure_aware(cfg):
     """
 
     cycles = cfg.digraph.find_cycles(cfg.max_cycle)
-    chains = find_chains(cfg.digraph, cfg.ndds, cfg.max_chain, cfg.edge_success_prob, 1)
+    chains = failure_aware_find_chains(cfg.digraph, cfg.ndds, cfg.max_chain, cfg.edge_success_prob)
 
     m = create_ip_model(cfg.timelimit, cfg.verbose)
     m.params.method = 2
@@ -296,7 +248,7 @@ def optimise_fuzzy_graph(cfg):
     """
 
     cycles = cfg.digraph.find_cycles(cfg.max_cycle)
-    chains = find_chains(cfg.digraph, cfg.ndds, cfg.max_chain, cfg.edge_success_prob, cfg.vertex_success_prob)
+    chains = fuzzy_graph_find_chains(cfg.digraph, cfg.ndds, cfg.max_chain, cfg.edge_success_prob, cfg.vertex_success_prob)
 
     m = create_ip_model(cfg.timelimit, cfg.verbose)
     m.params.method = 2

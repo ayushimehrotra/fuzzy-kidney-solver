@@ -119,8 +119,53 @@ class Chain(object):
         return 0
 
 
+def fuzzy_graph_find_chains(digraph, ndds, max_chain, edge_success_prob=0.7, vertex_success_prob=0.7):
+    """Generate all chains with up to max_chain edges."""
+
+    def find_chains_recurse(vertices, score):
+        chains.append(Chain(ndd_idx, vertices[:], score))
+        if len(vertices) < max_chain:
+            for e in digraph.vs[vertices[-1]].edges:
+                if e.tgt.id not in vertices:
+                    vertices.append(e.tgt.id)
+                    find_chains_recurse(vertices, score + e.score * edge_success_prob ** len(
+                                            vertices) + e.score * vertex_success_prob ** (len(vertices) + 1))
+                    del vertices[-1]
+
+    chains = []
+    if max_chain == 0:
+        return chains
+    for ndd_idx, ndd in enumerate(ndds):
+        for e in ndd.edges:
+            vertices = [e.target_v.id]
+            find_chains_recurse(vertices, e.score * edge_success_prob * vertex_success_prob ** 2)
+    return chains
+
+
+def failure_aware_find_chains(digraph, ndds, max_chain, edge_success_prob=0.7):
+    """Generate all chains with up to max_chain edges."""
+
+    def find_chains_recurse(vertices, score):
+        chains.append(Chain(ndd_idx, vertices[:], score))
+        if len(vertices) < max_chain:
+            for e in digraph.vs[vertices[-1]].edges:
+                if e.tgt.id not in vertices:
+                    vertices.append(e.tgt.id)
+                    find_chains_recurse(vertices, score + e.score * edge_success_prob ** len(vertices))
+                    del vertices[-1]
+
+    chains = []
+    if max_chain == 0:
+        return chains
+    for ndd_idx, ndd in enumerate(ndds):
+        for e in ndd.edges:
+            vertices = [e.target_v.id]
+            find_chains_recurse(vertices, e.score * edge_success_prob)
+    return chains
+
+
 def maximum_cardinality_find_chains(digraph, ndds, max_chain):
-    """Generate all chains with up to max_chain edges for maximum cardinality."""
+    """Generate all chains with up to max_chain edges."""
 
     def find_chains_recurse(vertices, score):
         chains.append(Chain(ndd_idx, vertices[:], score))
@@ -138,49 +183,4 @@ def maximum_cardinality_find_chains(digraph, ndds, max_chain):
         for e in ndd.edges:
             vertices = [e.target_v.id]
             find_chains_recurse(vertices, e.score)
-    return chains
-
-
-def failure_aware_find_chains(digraph, ndds, max_chain, edge_prob):
-    """Generate all chains with up to max_chain edges for failure aware."""
-
-    def find_chains_recurse(vertices, score):
-        chains.append(Chain(ndd_idx, vertices[:], score))
-        if len(vertices) < max_chain:
-            for e in digraph.vs[vertices[-1]].edges:
-                if e.tgt.id not in vertices:
-                    vertices.append(e.tgt.id)
-                    find_chains_recurse(vertices, score + e.score * edge_prob ** len(vertices))
-                    del vertices[-1]
-
-    chains = []
-    if max_chain == 0:
-        return chains
-    for ndd_idx, ndd in enumerate(ndds):
-        for e in ndd.edges:
-            vertices = [e.target_v.id]
-            find_chains_recurse(vertices, e.score * edge_prob)
-    return chains
-
-
-def fuzzy_graph_find_chains(digraph, ndds, max_chain, edge_prob, vertex_prob):
-    """Generate all chains with up to max_chain edges for fuzzy graph."""
-
-    def find_chains_recurse(vertices, score):
-        chains.append(Chain(ndd_idx, vertices[:], score))
-        if len(vertices) < max_chain:
-            for e in digraph.vs[vertices[-1]].edges:
-                if e.tgt.id not in vertices:
-                    vertices.append(e.tgt.id)
-                    find_chains_recurse(vertices, score + e.score * edge_prob ** len(vertices) * vertex_prob ** (
-                                len(vertices) + 1))
-                    del vertices[-1]
-
-    chains = []
-    if max_chain == 0:
-        return chains
-    for ndd_idx, ndd in enumerate(ndds):
-        for e in ndd.edges:
-            vertices = [e.target_v.id]
-            find_chains_recurse(vertices, e.score * edge_prob * vertex_prob ** 2)
     return chains
