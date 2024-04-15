@@ -8,8 +8,18 @@ This program is the proof of concept of using fuzzy graphs in kidney exchanges t
  - Gurobi
 
 ## Use
-The program uses file inputs, as seen in the data folder, to input the number of patient-donor pairs, edges, and non-directed donors. Below is an introduction to the files in the repository:
+In each folder, there is a file called `kidney_solver.py` which is used to run the optimization algorithm. Below is a general description for each of the files in each of the folders.
  - `kidney_solver.py`: driver of the code, required arguments are the cycle-cap, chain-cap, and specific formulation
  - `kidney_ndd.py`: class for chains and finding all possible optimal chains
  - `kidney_ip.py`: specific formulation of Integer Linear Programming problem
  - `kidney_digraph.py`: inputs the kidney exchange graph and finds the score of all the cycles and chains
+
+The folder that is simply named `kidney_solver` contains the implementations of the fuzzy graph representation, failure aware representation, and maximum cardinality. The folder that is named `choice_kidney_solver` contains weighted choice and hybrid choice. 
+
+## Commands
+Going into each of the folders, call the below command to run the program.
+```
+python kidney_solver.py 3 5 max
+```
+which runs `kidney_solver.py` with a cycle cap of 3 and a chain cap of 5, running maximum cardinality.
+
