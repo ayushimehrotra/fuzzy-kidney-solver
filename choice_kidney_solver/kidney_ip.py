@@ -61,6 +61,7 @@ class OptSolution(object):
         self.digraph = digraph
         self.total_score = (sum(c.expected_score for c in chains) +
                             sum(expected_utility(c, digraph, edge_success_prob, vertex_success_prob) for c in cycles))
+        self.choice_score = (sum(c.score for c in chains) + sum(choice_utility(c, digraph, edge_success_prob, vertex_success_prob, donor, patient) for c in cycles))
         self.edge_success_prob = edge_success_prob
         self.vertex_success_prob = vertex_success_prob
         self.donor = donor

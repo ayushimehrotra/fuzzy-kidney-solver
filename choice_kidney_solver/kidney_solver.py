@@ -70,10 +70,10 @@ def start():
     args = parser.parse_args()
     args.formulation = args.formulation.lower()
 
-    ftime = open("time_weighted.txt", "w")
-    fwc = open("weighted_utility.txt", "w")
+    # ftime = open("time_weighted.txt", "w")
+    # fwc = open("weighted_utility.txt", "w")
 
-    for i in range(163):
+    for i in range(23):
         f = open("choice_data/choice_{}.txt".format(i), "r")
         lines = f.readlines()
         input_lines = [line for line in lines if len(line.strip()) > 0]
@@ -91,11 +91,10 @@ def start():
         cfg = kidney_ip.OptConfig(d, altruists, args.cycle_cap, args.chain_cap, args.verbose,
                                   args.timelimit, args.edge_success_prob, args.vertex_success_prob, args.donor,
                                   args.patient, args.threshold, args.lp_file, args.relax)
-        opt_solution = solve_kep(cfg, args.formulation, args.use_relabelled)
+        opt_weighted_solution = solve_kep(cfg, "weighted", args.use_relabelled)
+        opt_hybrid_solution = solve_kep(cfg, "hybrid", args.use_relabelled)
+        print(str(opt_weighted_solution.total_score) + ", " + str(opt_hybrid_solution.total_score))
         time_taken = time.time() - start_time
-        ftime.write(str(time_taken) + '\n')
-        print(str(opt_solution.total_score) + ',' + str(time_taken))
-        fwc.write(str(opt_solution.total_score) + '\n')
 
 if __name__=="__main__":
     start()
