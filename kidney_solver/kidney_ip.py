@@ -64,8 +64,8 @@ class OptSolution(object):
         self.cycles = cycles
         self.chains = chains
         self.digraph = digraph
-        self.total_score = (sum(c.score for c in chains) +
-                            sum(cycle_score(c, digraph) for c in cycles))
+        self.total_score = (sum(c.expected_score for c in chains) +
+                            sum(fuzzy_cycle_score(c, digraph) for c in cycles))
         self.edge_success_prob = edge_success_prob
         self.vertex_success_prob = vertex_success_prob
 

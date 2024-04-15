@@ -30,19 +30,6 @@ class NddEdge:
         self.score = score
 
 
-def create_relabelled_ndds(ndds, old_to_new_vtx):
-    """Creates a copy of a n array of NDDs, with target vertices changed.
-
-    If a target vertex in an original NDD had ID i, then the new target vertex
-    will be old_to_new_vtx[i].
-    """
-    new_ndds = [Ndd() for ndd in ndds]
-    for i, ndd in enumerate(ndds):
-        for edge in ndd.edges:
-            new_ndds[i].add_edge(NddEdge(old_to_new_vtx[edge.target_v.id], edge.score))
-
-    return new_ndds
-
 
 def read_ndds(lines, digraph):
     """Reads NDDs from an array of strings in the .ndd format."""
@@ -85,10 +72,11 @@ class Chain(object):
         score: the chain's score
     """
 
-    def __init__(self, ndd_index, vtx_indices, score):
+    def __init__(self, ndd_index, vtx_indices, score, expected_score):
         self.ndd_index = ndd_index
         self.vtx_indices = vtx_indices
         self.score = score
+        self.expected_score = expected_score
 
     def __repr__(self):
         return ("Chain NDD{} ".format(self.ndd_index) +
@@ -123,7 +111,7 @@ def fuzzy_graph_find_chains(digraph, ndds, max_chain, edge_success_prob=0.7, ver
     """Generate all chains with up to max_chain edges."""
 
     def find_chains_recurse(vertices, score):
-        chains.append(Chain(ndd_idx, vertices[:], score))
+        chains.append(Chain(ndd_idx, vertices[:], score, score))
         if len(vertices) < max_chain:
             for e in digraph.vs[vertices[-1]].edges:
                 if e.tgt.id not in vertices:
@@ -145,13 +133,14 @@ def fuzzy_graph_find_chains(digraph, ndds, max_chain, edge_success_prob=0.7, ver
 def failure_aware_find_chains(digraph, ndds, max_chain, edge_success_prob=0.7):
     """Generate all chains with up to max_chain edges."""
 
-    def find_chains_recurse(vertices, score):
-        chains.append(Chain(ndd_idx, vertices[:], score))
+    def find_chains_recurse(vertices, score, expected_score):
+        chains.append(Chain(ndd_idx, vertices[:], score, expected_score))
         if len(vertices) < max_chain:
             for e in digraph.vs[vertices[-1]].edges:
                 if e.tgt.id not in vertices:
                     vertices.append(e.tgt.id)
-                    find_chains_recurse(vertices, score + e.score * edge_success_prob ** len(vertices))
+                    find_chains_recurse(vertices, score + e.score * edge_success_prob ** len(vertices), score + e.score * edge_success_prob ** len(
+                                            vertices) + e.score * edge_success_prob ** (len(vertices) + 1))
                     del vertices[-1]
 
     chains = []
@@ -160,20 +149,21 @@ def failure_aware_find_chains(digraph, ndds, max_chain, edge_success_prob=0.7):
     for ndd_idx, ndd in enumerate(ndds):
         for e in ndd.edges:
             vertices = [e.target_v.id]
-            find_chains_recurse(vertices, e.score * edge_success_prob)
+            find_chains_recurse(vertices, e.score * edge_success_prob, e.score * edge_success_prob * edge_success_prob ** 2)
     return chains
 
 
 def maximum_cardinality_find_chains(digraph, ndds, max_chain):
     """Generate all chains with up to max_chain edges."""
 
-    def find_chains_recurse(vertices, score):
-        chains.append(Chain(ndd_idx, vertices[:], score))
+    def find_chains_recurse(vertices, score, expected_score):
+        chains.append(Chain(ndd_idx, vertices[:], score, expected_score))
         if len(vertices) < max_chain:
             for e in digraph.vs[vertices[-1]].edges:
                 if e.tgt.id not in vertices:
                     vertices.append(e.tgt.id)
-                    find_chains_recurse(vertices, score + e.score)
+                    find_chains_recurse(vertices, score + e.score, score + e.score * 0.7 ** len(
+                                            vertices) + e.score * 0.7 ** (len(vertices) + 1))
                     del vertices[-1]
 
     chains = []
@@ -182,5 +172,5 @@ def maximum_cardinality_find_chains(digraph, ndds, max_chain):
     for ndd_idx, ndd in enumerate(ndds):
         for e in ndd.edges:
             vertices = [e.target_v.id]
-            find_chains_recurse(vertices, e.score)
+            find_chains_recurse(vertices, e.score, e.score * 0.7 * 0.7 ** 2)
     return chains

@@ -15,7 +15,7 @@ def solve_kep(cfg, formulation, use_relabelled=True):
 
     formulations = {
         "max":   ("Maximum Cardinality",
-                  kidney_ip.optimise_fuzzy_graph),
+                  kidney_ip.optimise_maximum_cardinality),
         "failure": ("Failure Aware", kidney_ip.optimise_failure_aware),
         "fuzzy": ("Fuzzy Graph", kidney_ip.optimise_fuzzy_graph)
     }
@@ -62,7 +62,9 @@ def start():
     args = parser.parse_args()
     args.formulation = args.formulation.lower()
 
-    for i in range(200):
+    oi = open("chain_20.txt", "w")
+
+    for i in range(60):
         f = open("data/data{}.txt".format(i), "r")
         lines = f.readlines()
         input_lines = [line for line in lines if len(line.strip()) > 0]
@@ -80,9 +82,11 @@ def start():
         cfg = kidney_ip.OptConfig(d, altruists, args.cycle_cap, args.chain_cap, args.verbose,
                                   args.timelimit, args.edge_success_prob, args.vertex_success_prob,
                                   args.lp_file, args.relax)
-        opt_solution = solve_kep(cfg, args.formulation, args.use_relabelled)
+        opt_max_solution = solve_kep(cfg, "max", args.use_relabelled)
+        opt_failure_solution = solve_kep(cfg, "failure", args.use_relabelled)
+        opt_fuzzy_solution = solve_kep(cfg, "fuzzy", args.use_relabelled)
         time_taken = time.time() - start_time
-        print(time_taken)
+        print(str(opt_max_solution.total_score/2)+ ', ' + str(opt_failure_solution.total_score) + ', ' + str(opt_fuzzy_solution.total_score))
 
 if __name__=="__main__":
     start()
