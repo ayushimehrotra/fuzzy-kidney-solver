@@ -1,7 +1,7 @@
 # Fuzzy Kidney Solver with Patient and Donor Choice
 Code modified from [this repository](https://github.com/jamestrimble/kidney_solver) 
 
-This program is the proof of concept of using fuzzy graphs in kidney exchanges that incorporates patient and donor choice. Below are the specific descriptions of the files and what is needed to run the proof of concept.
+This program is the proof of concept of using fuzzy graphs in kidney exchanges that incorporates patient and donor choice. Below are the specific descriptions of the files and what is needed to run the proof of concept. This project was accepted for presentation at the American Association for the Advancement of Science (AAAS) Annual Meeting 2025.
 
 ## Prerequisites
  - Python 3
